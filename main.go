@@ -12,27 +12,12 @@ import (
 
 func main() {
 	// https://www.elastic.co/guide/en/elasticsearch/reference/6.3/search-request-scroll.html
+	ipAddr := "172.104.246.109" // Ip address to crawl
+	port := 9200                // Port of elastic service
+
 	s := grequests.NewSession(nil)
-	ipAddr := "172.104.246.109"
-	port := 9200
-
-	resp, err := s.Get(fmt.Sprintf("http://%s:%d/_all/_search?size=100000000", ipAddr, port), nil)
-	if err != nil {
-		panic(err)
-	}
-
-	rs := strings.Split(resp.String(), "r equal to: [")
-	if len(rs) < 2 {
-		panic("Max sort not found")
-	}
-	rs = strings.Split(rs[1], "]")
-	if len(rs) < 2 {
-		panic("Max sort not found")
-	}
-	maxSize := rs[0]
-	fmt.Printf("Max Size: %s\n", maxSize)
-
-	f, err := os.OpenFile("ErrorLog.txt", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
+	// Open file for writing, create it if necessary.
+	f, err := os.OpenFile("Crawl.txt", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
 	if err != nil {
 		panic(err)
 	}
@@ -47,7 +32,7 @@ func main() {
 		},
 	}
 
-	resp, err = s.Post(fmt.Sprintf("http://%s:%d/_all/_search?scroll=1m", ipAddr, port), ro)
+	resp, err := s.Post(fmt.Sprintf("http://%s:%d/_all/_search?scroll=1m", ipAddr, port), ro)
 	if err != nil {
 		panic(err)
 	}
