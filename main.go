@@ -5,7 +5,6 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/levigross/grequests"
 )
@@ -71,6 +70,6 @@ func main() {
 			os.Exit(0)
 		}
 
-		time.Sleep(1 * time.Second)
+		//time.Sleep(1 * time.Second)
 	}
 }
