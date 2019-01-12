@@ -18,21 +18,14 @@ def parse_single(data):
     save = [
         "tf_full_name",
         "city_name",
-        "canonical_str",
         "state_name",
-        "education_org",
         "tf_all_job_titles",
         "tf_all_education",
         "linkedin_profile_url",
-        "tf_current_company",
-        "tf_current_job_title",
-        "company_name",
         "job_title"
         "tf_all_companies",
-        "tf_all_education",
         ['certification', "title"],
         "certificate_authority"
-
     ]
 
     save_data = ""
