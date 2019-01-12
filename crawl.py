@@ -10,6 +10,7 @@ index = "scraping"              # Index to scan
 port = "9200"               # Port of elastic service
 size = 1000
 pagesPerFile = 1000
+scrollTimer = "1440"
 # To list all indices go to <IP>:<port>/_cat/indices?v
 
 
@@ -58,29 +59,44 @@ def parse_single(data):
     return save_data
 
 
-s = requests.session()
-r = s.post("http://" + ipAdr + ":" + port + "/" + index + "/_search?scroll=1m&size=" + str(size), headers={'Content-Type': 'application/json'})
-if not r.ok:
-    print("Response not okay, exiting")
-    sys.exit(1)
+scrollFile = open(ipAdr + "-scrollID.txt", "w+")
+print(len(scrollFile.readlines()))
+scrollContents = scrollFile.readlines()
 
-rJson = json.loads(r.text)
+if len(scrollContents) == 0:
 
-scrollID = rJson["_scroll_id"]
-totalRequests = (rJson["hits"]["total"])/size
+    s = requests.session()
+    r = s.post("http://" + ipAdr + ":" + port + "/" + index + "/_search?scroll=" + scrollTimer + "m&size=" + str(size), headers={'Content-Type': 'application/json'})
+    if not r.ok:
+        print("Response not okay, exiting")
+        print(r.text)
+        sys.exit(1)
 
-fileName = ipAdr + "-" + index + "-0.txt"
+    rJson = json.loads(r.text)
 
+    if 'error' in rJson:
+        print(rJson)
+        sys.exit(1)
+
+    scrollID = rJson["_scroll_id"]
+    totalRequests = str(int((rJson["hits"]["total"])/size))
+
+    scrollContents.append(scrollID)
+    scrollContents.append(totalRequests)
+    scrollContents.append("1")
+scrollFile.close()
+
+fileName = ipAdr + "-" + index + "-" + str(int(int(scrollContents[2]) / pagesPerFile)) + ".txt"
 f = open(fileName, "a", encoding='utf-16')
 
-i = 1
 while True:
-    print("Getting page ", i, "/", int(totalRequests) + 1)
-    i = i + 1
+    print("Getting page ", scrollContents[2], "/", scrollContents[1])
+    scrollContents[2] = str(int(scrollContents[2]) + 1)
 
-    if i % pagesPerFile == 0:
+    if int(scrollContents[1]) % pagesPerFile == 0:
         f.close()
-        fileName = ipAdr + "-" + index + "-" + str(int(i/pagesPerFile)) + ".txt"
+
+        fileName = ipAdr + "-" + index + "-" + str(int(int(scrollContents[2]) % pagesPerFile)) + ".txt"
         f = open(fileName, "a", encoding='utf-16')
 
     r = s.post("http://" + ipAdr + ":" + str(port) + "/_search/scroll?scroll=1m&scroll_id=" + scrollID, headers={'Content-Type': 'application/json'})
@@ -91,6 +107,13 @@ while True:
 
     rJson = json.loads(r.text)
     scrollID = rJson["_scroll_id"]
+    if scrollID != scrollContents[0]:
+        scrollContents[0] = scrollID
+
+    scrollFile = open(ipAdr + "-scrollID.txt", "w")
+    for i in scrollContents:
+        scrollFile.write("%s\n" %i)
+    scrollFile.close()
 
     if len(rJson["hits"]["hits"]) == 0:
         print("Got all data")
