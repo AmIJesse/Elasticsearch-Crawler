@@ -71,7 +71,8 @@ totalRequests = (rJson["hits"]["total"])/size
 
 fileName = ipAdr + "-" + index + "-0.txt"
 
-f = open(fileName, "a", encoding='utf-16')
+#f = open(fileName, "a", encoding='utf-16')
+f = open(fileName, 'ab')
 
 i = 1
 while True:
@@ -81,7 +82,8 @@ while True:
     if i % pagesPerFile == 0:
         f.close()
         fileName = ipAdr + "-" + index + "-" + str(int(i/pagesPerFile)) + ".txt"
-        f = open(fileName, "a", encoding='utf-16')
+        #f = open(fileName, "a", encoding='utf-16')
+        f = open(fileName, 'ab')
 
     r = s.post("http://" + ipAdr + ":" + str(port) + "/_search/scroll?scroll=1m&scroll_id=" + scrollID, headers={'Content-Type': 'application/json'})
     if not r.ok:
@@ -101,7 +103,7 @@ while True:
         cwd = hit["_source"]
         csv = parse_single(cwd)
 
-        f.write(csv + "\n")
+        f.write((csv + "\n").encode('utf-16'))
 
     time.sleep(1)
 
