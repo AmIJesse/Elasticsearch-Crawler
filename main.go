@@ -1,143 +1,75 @@
-import requests
-from nested_lookup import nested_lookup
+package main
 
-import sys
-import time
-import json
-import os.path
+import (
+	"fmt"
+	"os"
+	"regexp"
+	"strings"
 
-ipAdr = "18.218.159.17"   # Ip address to crawl
-index = "scraping"              # Index to scan
-port = "9200"               # Port of elastic service
-size = 1000
-pagesPerFile = 1000
-scrollTimer = "1440"
-# To list all indices go to <IP>:<port>/_cat/indices?v
+	"github.com/levigross/grequests"
+)
 
+func main() {
+	// https://www.elastic.co/guide/en/elasticsearch/reference/6.3/search-request-scroll.html
+	ipAddr := "172.104.246.109" // Ip address to crawl
+	port := 9200                // Port of elastic service
 
-def parse_single(data):
-    save = [
-        "tf_full_name",
-        "city_name",
-        "canonical_str",
-        "state_name",
-        "education_org",
-        "tf_all_job_titles",
-        "tf_all_education",
-        "linkedin_profile_url",
-        "tf_current_company",
-        "tf_current_job_title",
-        "company_name",
-        "job_title"
-        "tf_all_companies",
-        "tf_all_education",
-        ['certification', "title"],
-        "certificate_authority"
+	s := grequests.NewSession(nil)
+	// Open file for writing, create it if necessary.
+	f, err := os.OpenFile("Crawl.txt", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
 
-    ]
+	ro := &grequests.RequestOptions{
+		Params: map[string]string{
+			"size": "1000",
+		},
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
+	}
 
-    save_data = ""
+	resp, err := s.Post(fmt.Sprintf("http://%s:%d/_all/_search?scroll=1m", ipAddr, port), ro)
+	if err != nil {
+		panic(err)
+	}
 
-    for i in save:
-        if isinstance(i, (list,)):
-            results = nested_lookup(i[0], data)
-            results = nested_lookup(i[1], results)
-            key = i[0] + "-" + i[1]
-        else:
-            results = nested_lookup(i, data)
+	r := regexp.MustCompile(`scroll_id":".*?"`)
+	matches := r.FindAllString(resp.String(), -1)
+	fmt.Printf("%d\n", len(matches))
+	match := matches[0]
+	scrollID := strings.Split(match, `"`)[2]
 
-        if len(results) == 1:
-            if results[0] != "":
-                save_data = save_data + str(results[0]) + ', '
-        else:
-            for n in results:
-                if n != "":
-                    save_data = save_data + n + ', '
+	n := 1
+	for {
 
-    save_data = save_data.replace(", \n", "")
-    save_data = save_data.replace("\n", "")
+		fmt.Printf("Grabbing request number %d\n", n)
+		n++
 
-    return save_data
+		ro := &grequests.RequestOptions{
+			Params: map[string]string{
+				"scroll":    "10m",
+				"scroll_id": scrollID,
+			},
+			Headers: map[string]string{
+				"Content-Type": "application/json",
+			},
+		}
 
+		resp, err := s.Post(fmt.Sprintf("http://%s:%d/_search/scroll", ipAddr, port), ro)
+		if err != nil {
+			panic(err)
+		}
 
-s = requests.session()
+		f.WriteString(resp.String() + "\n")
 
+		if strings.Contains(resp.String(), `"hits":[]}`) {
+			fmt.Printf("Scraped all results.\n")
+			os.Exit(0)
+		}
 
-if os.path.isfile("./" + ipAdr + "-scrollID.txt"):
-    scrollFile = open(ipAdr + "-scrollID.txt", "r+")
-    scrollContents = scrollFile.read().split("\n")
-    scrollFile.close()
-    scrollID = scrollContents[0]
-
-else:
-    scrollContents = []
-
-    r = s.post("http://" + ipAdr + ":" + port + "/" + index + "/_search?scroll=" + scrollTimer + "m&size=" + str(size), headers={'Content-Type': 'application/json'})
-    if not r.ok:
-        print("Response not okay, exiting")
-        print(r.text)
-        sys.exit(1)
-
-    rJson = json.loads(r.text)
-
-    if 'error' in rJson:
-        print(rJson)
-        sys.exit(1)
-
-    scrollID = rJson["_scroll_id"]
-    totalRequests = str(int((rJson["hits"]["total"])/size))
-
-    scrollContents.append(scrollID)
-    scrollContents.append(totalRequests)
-    scrollContents.append("1")
-
-
-print(str(scrollContents))
-for i in range(len(scrollContents)-1):
-    scrollContents[i] = scrollContents[i].strip()
-
-
-fileName = ipAdr + "-" + index + "-" + str(int(int(scrollContents[2]) / pagesPerFile)) + ".txt"
-f = open(fileName, "a", encoding='utf-16')
-
-while True:
-    print("Getting page ", scrollContents[2], "/", scrollContents[1])
-    scrollContents[2] = str(int(scrollContents[2]) + 1)
-
-    if int(scrollContents[1]) % pagesPerFile == 0:
-        f.close()
-
-        fileName = ipAdr + "-" + index + "-" + str(int(int(scrollContents[2]) % pagesPerFile)) + ".txt"
-        f = open(fileName, "a", encoding='utf-16')
-
-    r = s.post("http://" + ipAdr + ":" + str(port) + "/_search/scroll?scroll=" + scrollTimer + "m&scroll_id=" + scrollID, headers={'Content-Type': 'application/json'})
-    if not r.ok:
-        print("Response not okay, sleeping 10 seconds")
-        print(r.text)
-        print("http://" + ipAdr + ":" + str(port) + "/_search/scroll?scroll=" + scrollTimer + "m&scroll_id=" + scrollID)
-        time.sleep(10)
-        continue
-
-    rJson = json.loads(r.text)
-    scrollID = rJson["_scroll_id"]
-    if scrollID != scrollContents[0]:
-        scrollContents[0] = scrollID
-
-    scrollFile = open(ipAdr + "-scrollID.txt", "w")
-    for i in scrollContents:
-        scrollFile.write("%s\n" %i)
-    scrollFile.close()
-
-    if len(rJson["hits"]["hits"]) == 0:
-        print("Got all data")
-        f.close()
-        sys.exit(0)
-
-    for hit in rJson["hits"]["hits"]:
-        cwd = hit["_source"]
-        csv = parse_single(cwd)
-
-        f.write(csv + "\n")
-
-    time.sleep(1)
-
+		//time.Sleep(1 * time.Second)
+	}
+}

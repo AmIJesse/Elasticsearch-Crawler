@@ -4,6 +4,7 @@ from nested_lookup import nested_lookup
 import sys
 import time
 import json
+import os.path
 
 ipAdr = "18.218.159.17"   # Ip address to crawl
 index = "scraping"              # Index to scan
@@ -18,14 +19,21 @@ def parse_single(data):
     save = [
         "tf_full_name",
         "city_name",
+        "canonical_str",
         "state_name",
+        "education_org",
         "tf_all_job_titles",
         "tf_all_education",
         "linkedin_profile_url",
+        "tf_current_company",
+        "tf_current_job_title",
+        "company_name",
         "job_title"
         "tf_all_companies",
+        "tf_all_education",
         ['certification', "title"],
         "certificate_authority"
+
     ]
 
     save_data = ""
@@ -52,13 +60,18 @@ def parse_single(data):
     return save_data
 
 
-scrollFile = open(ipAdr + "-scrollID.txt", "w+")
-print(len(scrollFile.readlines()))
-scrollContents = scrollFile.readlines()
+s = requests.session()
 
-if len(scrollContents) == 0:
 
-    s = requests.session()
+if os.path.isfile("./" + ipAdr + "-scrollID.txt"):
+    scrollFile = open(ipAdr + "-scrollID.txt", "r+")
+    scrollContents = scrollFile.read().split("\n")
+    scrollFile.close()
+    scrollID = scrollContents[0]
+
+else:
+    scrollContents = []
+
     r = s.post("http://" + ipAdr + ":" + port + "/" + index + "/_search?scroll=" + scrollTimer + "m&size=" + str(size), headers={'Content-Type': 'application/json'})
     if not r.ok:
         print("Response not okay, exiting")
@@ -77,7 +90,12 @@ if len(scrollContents) == 0:
     scrollContents.append(scrollID)
     scrollContents.append(totalRequests)
     scrollContents.append("1")
-scrollFile.close()
+
+
+print(str(scrollContents))
+for i in range(len(scrollContents)-1):
+    scrollContents[i] = scrollContents[i].strip()
+
 
 fileName = ipAdr + "-" + index + "-" + str(int(int(scrollContents[2]) / pagesPerFile)) + ".txt"
 f = open(fileName, "a", encoding='utf-16')
@@ -92,9 +110,11 @@ while True:
         fileName = ipAdr + "-" + index + "-" + str(int(int(scrollContents[2]) % pagesPerFile)) + ".txt"
         f = open(fileName, "a", encoding='utf-16')
 
-    r = s.post("http://" + ipAdr + ":" + str(port) + "/_search/scroll?scroll=1m&scroll_id=" + scrollID, headers={'Content-Type': 'application/json'})
+    r = s.post("http://" + ipAdr + ":" + str(port) + "/_search/scroll?scroll=" + scrollTimer + "m&scroll_id=" + scrollID, headers={'Content-Type': 'application/json'})
     if not r.ok:
         print("Response not okay, sleeping 10 seconds")
+        print(r.text)
+        print("http://" + ipAdr + ":" + str(port) + "/_search/scroll?scroll=" + scrollTimer + "m&scroll_id=" + scrollID)
         time.sleep(10)
         continue
 
