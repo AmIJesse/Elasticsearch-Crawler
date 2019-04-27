@@ -24,6 +24,7 @@ import sys
 import os.path
 import socket
 import ast
+from io import open
 
 if pVer == 3:
     inpFunc = input
@@ -143,7 +144,7 @@ for i in range(len(scrollContents)-1):
 
 # Create scroll files. We save 1000 "pages" of results per file
 fileName = ipAdr + "-" + index + "-" + str(int(int(scrollContents[2]) / pagesPerFile)) + ".txt"
-f = open(fileName, "a")#, encoding='utf-16')
+f = open(fileName, "a", encoding='utf-16')
 
 # Loop through every request, get the results, parse them, and save them to their respective files
 while True:
@@ -155,7 +156,7 @@ while True:
         f.close()
 
         fileName = ipAdr + "-" + index + "-" + str(int(int(scrollContents[2]) % pagesPerFile)) + ".txt"
-        f = open(fileName, "a")#, encoding='utf-16')
+        f = open(fileName, "a", encoding='utf-16')
 
     # Get next "page" storia_moments
     r = s.post("http://" + ipAdr + ":" + str(port) + "/_search/scroll?scroll=" + scrollTimer + "m&scroll_id=" + scrollID, headers={'Content-Type': 'application/json'})
