@@ -2,14 +2,20 @@
 
 import sys
 if sys.version_info[0] < 3:
-    print("Must be using Python 3")
-    sys.exit(1)
+    pVer = 2
+else:
+    pVer = 3
 
 import requests
 try:
     from nested_lookup import nested_lookup
 except ImportError:
-    print("Nested_lookup import not found, please execute the command: pip3 install nested_lookup")
+    print("Nested_lookup import not found.")
+    if pVer == 3:
+        print("please execute the command: pip3 install nested_lookup")
+    else:
+        print("please execute the command: pip install nested_lookup")
+
     sys.exit(1)
 
 import time
@@ -19,14 +25,17 @@ import os.path
 import socket
 import ast
 
+if pVer == 3:
+    inpFunc = input
+else:
+    inpFunc = raw_input
 
 size = 1000
 pagesPerFile = 1000
 scrollTimer = "1440"
 
-
 # Take input for IP address, port, index, and values to save
-ipAdr = input("IP address: ")
+ipAdr = inpFunc("IP address: ")
 try:
     socket.inet_aton(ipAdr)
 except socket.error:
@@ -34,9 +43,9 @@ except socket.error:
     sys.exit()
 
 print("To list all indices go to <IP>:<port>/_cat/indices?v")
-index = input("Index: ")
+index = inpFunc("Index: ")
 
-port = input("Port (Default is 9200): ")
+port = inpFunc("Port (Default is 9200): ")
 
 save = []
 print("Values within the index you want to save. When you're done submit an empty string")
@@ -45,7 +54,7 @@ print("{'name': 'Jesse', 'job': {'name': 'Electrician', 'position': 'worker', 'c
 print("And you only want the name of the job, not the actual persons name, you can do the following as input")
 print("['job', 'name']")
 
-inp = input("Value: ")
+inp = inpFunc("Value: ")
 while inp != "":
     if '[' in inp and ']' in inp:
         try:
@@ -54,7 +63,7 @@ while inp != "":
             print("Invalid input.")
     else:
         save.append(inp)
-    inp = input("Value: ")
+    inp = inpFunc("Value: ")
 
 def parse_single(data):
     # Set our save string to nothing
