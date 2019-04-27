@@ -46,6 +46,8 @@ print("To list all indices go to <IP>:<port>/_cat/indices?v")
 index = inpFunc("Index: ")
 
 port = inpFunc("Port (Default is 9200): ")
+if port == "":
+    port = 9200
 
 save = []
 print("Values within the index you want to save. When you're done submit an empty string")
@@ -141,7 +143,7 @@ for i in range(len(scrollContents)-1):
 
 # Create scroll files. We save 1000 "pages" of results per file
 fileName = ipAdr + "-" + index + "-" + str(int(int(scrollContents[2]) / pagesPerFile)) + ".txt"
-f = open(fileName, "a", encoding='utf-16')
+f = open(fileName, "a")#, encoding='utf-16')
 
 # Loop through every request, get the results, parse them, and save them to their respective files
 while True:
@@ -153,9 +155,9 @@ while True:
         f.close()
 
         fileName = ipAdr + "-" + index + "-" + str(int(int(scrollContents[2]) % pagesPerFile)) + ".txt"
-        f = open(fileName, "a", encoding='utf-16')
+        f = open(fileName, "a")#, encoding='utf-16')
 
-    # Get next "page" 
+    # Get next "page" storia_moments
     r = s.post("http://" + ipAdr + ":" + str(port) + "/_search/scroll?scroll=" + scrollTimer + "m&scroll_id=" + scrollID, headers={'Content-Type': 'application/json'})
     if not r.ok:
         # This shouldn't happen often unless we're being ratelimited
