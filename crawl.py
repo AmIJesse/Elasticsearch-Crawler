@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import sys
 if sys.version_info[0] < 3:
     pVer = 2
@@ -46,7 +48,7 @@ index = inpFunc("Index: ")
 
 port = inpFunc("Port (Default is 9200): ")
 if port == "":
-    port = 9200
+    port = "9200"
 
 save = []
 print("Values within the index you want to save. When you're done submit an empty string")
@@ -103,7 +105,7 @@ s = requests.session()
 
 # If there is a scrollID.txt file parse it to figure out where in the search we are
 if os.path.isfile("./" + ipAdr + "-scrollID.txt"):
-    scrollFile = open(ipAdr + "-scrollID.txt", "r+")
+    scrollFile = open(ipAdr + "-scrollID.txt", "r+", encoding="utf-8")
     scrollContents = scrollFile.read().split("\n")
     scrollFile.close()
     scrollID = scrollContents[0]
@@ -173,9 +175,9 @@ while True:
         scrollContents[0] = scrollID
 
     # Update scrollID.txt file if anything's changed
-    scrollFile = open(ipAdr + "-scrollID.txt", "w")
+    scrollFile = open(ipAdr + "-scrollID.txt", "w",encoding='utf-8')
     for i in scrollContents:
-        scrollFile.write("%s\n" %i)
+        scrollFile.write(u"%s\n" %i)
     scrollFile.close()
 
     # If we're out of results, we've scraped everything
@@ -189,6 +191,6 @@ while True:
         cwd = hit["_source"]
         csv = parse_single(cwd)
         # and write them to the current file
-        f.write(csv + "\n")
+        f.write(u"%s\n" %csv)
 
     time.sleep(1)
