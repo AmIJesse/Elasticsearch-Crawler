@@ -70,7 +70,7 @@ while inp != "":
 
 def parse_single(data):
     # Set our save string to nothing
-    save_data = ""
+    save_data = u""
 
     # For each value you want to save, if it's a list, do two nested lookips
     for i in save:
@@ -87,18 +87,18 @@ def parse_single(data):
         # If we have a single result that isn't empty add it to the string
         if len(results) == 1:
             if results[0] != "":
-                save_data = save_data + str(results[0]) + ', '
+                save_data =  u"%s%s," %(save_data, results[0])
         else:
             # If we have list of results, if each of them isn't empty all them to the string
             for n in results:
                 if n != "":
-                    save_data = save_data + n + ', '
+                    save_data =  u"%s%s," %(save_data, n)
 
     # Clean up the string
     save_data = save_data.replace(", \n", "")
     save_data = save_data.replace("\n", "")
 
-    return save_data
+    return u"%s" %save_data
 
 # Create session to keep track of cookies/headers
 s = requests.session()
@@ -148,7 +148,7 @@ f = open(fileName, "a", encoding='utf-16')
 
 # Loop through every request, get the results, parse them, and save them to their respective files
 while True:
-    print("Getting page ", scrollContents[2], "/", scrollContents[1])
+    print("Getting page %s / %s" %(scrollContents[2], scrollContents[1]))
     scrollContents[2] = str(int(scrollContents[2]) + 1)
 
     if int(scrollContents[1]) % pagesPerFile == 0:
