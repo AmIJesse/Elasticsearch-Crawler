@@ -76,14 +76,14 @@ def parse_single(data):
     for i in save:
         # If you passed a list, loop through it to get the innermost value
         if isinstance(i, (list,)):
-            print('list')
+            #print('list')
             results = data
             for n in range(len(i)):
                 results = nested_lookup(i[n], results)
         else:
             # Else just lookup the value
             results = nested_lookup(i, data)
-
+        #print(data)
         # If we have a single result that isn't empty add it to the string
         if len(results) == 1:
             if results[0] != "":
@@ -130,7 +130,10 @@ else:
         sys.exit(1)
 
     scrollID = rJson["_scroll_id"]
-    totalRequests = str(int((rJson["hits"]["total"])/size))
+    totalHits = rJson["hits"]["total"]
+    if type(totalHits) == dict:
+        totalHits = totalHits["value"]
+    totalRequests = str(int(totalHits)/size)
 
     scrollContents.append(scrollID)
     scrollContents.append(totalRequests)
@@ -163,11 +166,13 @@ while True:
     if not r.ok:
         # This shouldn't happen often unless we're being ratelimited
         print("Response not okay, sleeping 10 seconds")
-        print(r.text)
+        #print(r.text)
         print("http://" + ipAdr + ":" + str(port) + "/_search/scroll?scroll=" + scrollTimer + "m&scroll_id=" + scrollID)
         time.sleep(10)
         continue
-
+    #with open('dbg.txt', 'w') as dbg:
+    #    dbg.write(r.text)
+        
     # Update scrollID
     rJson = json.loads(r.text)
     scrollID = rJson["_scroll_id"]
@@ -181,6 +186,7 @@ while True:
     scrollFile.close()
 
     # If we're out of results, we've scraped everything
+    #print(rJson["hits"])
     if len(rJson["hits"]["hits"]) == 0:
         print("Got all data")
         f.close()
