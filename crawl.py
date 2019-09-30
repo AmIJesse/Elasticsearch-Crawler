@@ -100,6 +100,9 @@ def parse_single(data):
 # Create session to keep track of cookies/headers
 s = requests.session()
 
+newScrollID = False
+rJson = ""
+
 # If there is a scrollID.txt file parse it to figure out where in the search we are
 if os.path.isfile("./" + ipAdr + "-scrollID.txt"):
     scrollFile = open(ipAdr + "-scrollID.txt", "r+", encoding="utf-8")
@@ -108,12 +111,14 @@ if os.path.isfile("./" + ipAdr + "-scrollID.txt"):
     scrollID = scrollContents[0]
 
 else:
+    newScrollID = True
     # If there is no scrollID.txt file
     # Send initial request to get a scrollID to start pulling all the data, and not just the 5000 results that you can get from a search
 
     # scrollContents contains the values we need to "scoll" through all the pages of results
     scrollContents = []
     r = s.post("http://" + ipAdr + ":" + port + "/" + index + "/_search?scroll=" + scrollTimer + "m&size=" + str(size), headers={'Content-Type': 'application/json'})
+    print("http://" + ipAdr + ":" + port + "/" + index + "/_search?scroll=" + scrollTimer + "m&size=" + str(size))
     if not r.ok:
         print("Response not okay, exiting")
         print(r.text)
@@ -146,6 +151,15 @@ for i in range(len(scrollContents)-1):
 fileName = ipAdr + "-" + index + "-" + str(int(int(scrollContents[2]) / pagesPerFile)) + ".txt"
 f = open(fileName, "a", encoding='utf-16')
 
+if newScrollID:
+    # Run each result through the parsing function
+    for hit in rJson["hits"]["hits"]:
+        cwd = hit["_source"]
+        csv = parse_single(cwd)
+        # and write them to the current file
+        if "," in csv:
+            f.write(u"%s\n" %csv)
+
 # Loop through every request, get the results, parse them, and save them to their respective files
 while True:
     print("Getting page %s / %s" %(scrollContents[2], scrollContents[1]))
@@ -159,6 +173,7 @@ while True:
         f = open(fileName, "a", encoding='utf-16')
 
     # Get next "page" storia_moments
+    #print("http://" + ipAdr + ":" + str(port) + "/_search/scroll?scroll=" + scrollTimer + "m&scroll_id=" + scrollID)
     r = s.post("http://" + ipAdr + ":" + str(port) + "/_search/scroll?scroll=" + scrollTimer + "m&scroll_id=" + scrollID, headers={'Content-Type': 'application/json'})
     if not r.ok:
         # This shouldn't happen often unless we're being ratelimited
@@ -181,6 +196,7 @@ while True:
     scrollFile.close()
 
     # If we're out of results, we've scraped everything
+    print(rJson)
     if len(rJson["hits"]["hits"]) == 0:
         print("Got all data")
         f.close()
@@ -191,7 +207,8 @@ while True:
         cwd = hit["_source"]
         csv = parse_single(cwd)
         # and write them to the current file
-        f.write(u"%s\n" %csv)
+        if "," in csv:
+            f.write(u"%s\n" %csv)
 
     time.sleep(1)
 
