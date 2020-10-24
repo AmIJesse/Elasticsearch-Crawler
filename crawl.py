@@ -36,34 +36,49 @@ pagesPerFile = 1000
 scrollTimer = "1440"
 
 # Take input for IP address, port, index, and values to save
-ipAdr = inpFunc("IP address: ")
+if len(sys.argv) > 1:
+    ipAdr = sys.argv[1]
+else:
+    ipAdr = inpFunc("IP address: ")
 try:
     socket.inet_aton(ipAdr)
 except socket.error:
     print("Invalid IP.")
     sys.exit()
 
-print("To list all indices go to <IP>:<port>/_cat/indices?v")
-index = inpFunc("Index name: ")
-
-port = inpFunc("Port (Default is 9200): ")
-if port == "":
-    port = "9200"
-
-save = []
-print("Field values to obtain (submit an empty line when finished):")
+if len(sys.argv) > 2:
+    port = sys.argv[2]
+else:
+    port = inpFunc("Port (Default is 9200): ")
+    if port == "":
+        port = "9200"
 
 
-inp = inpFunc("Value: ")
-while inp != "":
-    if '[' in inp and ']' in inp:
-        try:
-            save.append(ast.literal_eval(inp))
-        except SyntaxError:
-            print("Invalid input.")
-    else:
-        save.append(inp)
+if len(sys.argv) > 3:
+    index = sys.argv[3]
+else:
+    print("To list all indices go to http://{0}:{1}/_cat/indices?v".format(ipAdr, port))
+    index = inpFunc("Index name: ")
+
+if len(sys.argv) > 4:
+    save = []
+    save = sys.argv[4:]
+
+else:
+    save = []
+    print("Field values to obtain (submit an empty line when finished):")
+
+
     inp = inpFunc("Value: ")
+    while inp != "":
+        if '[' in inp and ']' in inp:
+            try:
+                save.append(ast.literal_eval(inp))
+            except SyntaxError:
+                print("Invalid input.")
+        else:
+            save.append(inp)
+        inp = inpFunc("Value: ")
 
 def parse_single(data):
     # Set our save string to nothing
