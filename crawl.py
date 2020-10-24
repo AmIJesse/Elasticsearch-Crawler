@@ -88,7 +88,6 @@ def parse_single(data):
     for i in save:
         # If you passed a list, loop through it to get the innermost value
         if isinstance(i, (list,)):
-            print('list')
             results = data
             for n in range(len(i)):
                 results = nested_lookup(i[n], results)
@@ -133,17 +132,17 @@ else:
     # scrollContents contains the values we need to "scoll" through all the pages of results
     scrollContents = []
     r = s.post("http://" + ipAdr + ":" + port + "/" + index + "/_search?scroll=" + scrollTimer + "m&size=" + str(size), headers={'Content-Type': 'application/json'})
-    print("http://" + ipAdr + ":" + port + "/" + index + "/_search?scroll=" + scrollTimer + "m&size=" + str(size))
+    #print("http://" + ipAdr + ":" + port + "/" + index + "/_search?scroll=" + scrollTimer + "m&size=" + str(size))
     if not r.ok:
         print("Response not okay, exiting")
-        print(r.text)
+        #print(r.text)
         sys.exit(1)
 
     rJson = json.loads(r.text)
 
     if 'error' in rJson:
         print("The server returned an error")
-        print(rJson)
+        #print(rJson)
         sys.exit(1)
 
     scrollID = rJson["_scroll_id"]
@@ -158,7 +157,7 @@ else:
 
 
 # Strip all whitespace from the scrollContents
-print(str(scrollContents))
+#print(str(scrollContents))
 for i in range(len(scrollContents)-1):
     scrollContents[i] = scrollContents[i].strip()
 
@@ -173,11 +172,13 @@ if newScrollID:
         csv = parse_single(cwd)
         # and write them to the current file
         if "," in csv:
+            print(u"%s" %csv)
+        else:
             f.write(u"%s\n" %csv)
 
 # Loop through every request, get the results, parse them, and save them to their respective files
 while True:
-    print("Getting page %s / %s" %(scrollContents[2], scrollContents[1]))
+    #print("Getting page %s / %s" %(scrollContents[2], scrollContents[1]))
     scrollContents[2] = str(int(scrollContents[2]) + 1)
 
     if int(scrollContents[1]) % pagesPerFile == 0:
@@ -192,9 +193,9 @@ while True:
     r = s.post("http://" + ipAdr + ":" + str(port) + "/_search/scroll?scroll=" + scrollTimer + "m&scroll_id=" + scrollID, headers={'Content-Type': 'application/json'})
     if not r.ok:
         # This shouldn't happen often unless we're being ratelimited
-        print("Response not okay, sleeping 10 seconds")
-        print(r.text)
-        print("http://" + ipAdr + ":" + str(port) + "/_search/scroll?scroll=" + scrollTimer + "m&scroll_id=" + scrollID)
+        #print("Response not okay, sleeping 10 seconds")
+        #print(r.text)
+        #print("http://" + ipAdr + ":" + str(port) + "/_search/scroll?scroll=" + scrollTimer + "m&scroll_id=" + scrollID)
         time.sleep(10)
         continue
 
@@ -211,7 +212,7 @@ while True:
     scrollFile.close()
 
     # If we're out of results, we've scraped everything
-    print(rJson)
+    #print(rJson)
     if len(rJson["hits"]["hits"]) == 0:
         print("Got all data")
         f.close()
@@ -223,6 +224,8 @@ while True:
         csv = parse_single(cwd)
         # and write them to the current file
         if "," in csv:
+            print(u"%s" %csv)
+        else:
             f.write(u"%s\n" %csv)
 
     time.sleep(1)
