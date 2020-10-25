@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
 import sys
+import glob
+
 if sys.version_info[0] < 3:
     pVer = 2
 else:
@@ -134,6 +136,7 @@ else:
     r = s.post("http://" + ipAdr + ":" + port + "/" + index + "/_search?scroll=" + scrollTimer + "m&size=" + str(size), headers={'Content-Type': 'application/json'})
     #print("http://" + ipAdr + ":" + port + "/" + index + "/_search?scroll=" + scrollTimer + "m&size=" + str(size))
     if not r.ok:
+        #print(r.text)
         print("Response not okay, exiting")
         #print(r.text)
         sys.exit(1)
@@ -214,8 +217,12 @@ while True:
     # If we're out of results, we've scraped everything
     #print(rJson)
     if len(rJson["hits"]["hits"]) == 0:
+        #print(r.text)
         print("Got all data")
         f.close()
+        fileList = glob.glob(ipAdr + "*.txt")
+        for f in fileList:
+            os.remove(f)
         sys.exit(0)
 
     # Run each result through the parsing function
